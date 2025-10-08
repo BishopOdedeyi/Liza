@@ -1,0 +1,545 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SwiftQuiz — Fun Quick Quiz</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Rubik:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#0f1724; /* deep navy */
+      --card:#0b1220;
+      --accent:#6ee7b7; /* mint */
+      --accent-2:#7dd3fc; /* cyan */
+      --muted:#94a3b8;
+      --danger:#ff7b7b;
+      --glass: rgba(255,255,255,0.03);
+      --glass-2: rgba(255,255,255,0.02);
+      --radius:14px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;
+      background: linear-gradient(180deg, #071126 0%, #071022 50%, #071126 100%);
+      color:#e6eef8;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:28px;
+    }
+
+    /* App shell */
+    .app{
+      width:100%;
+      max-width:1024px;
+      background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border-radius:18px;
+      box-shadow: 0 10px 30px rgba(2,6,23,0.6);
+      overflow:hidden;
+      display:grid;
+      grid-template-columns: 1fr 360px;
+      min-height:640px;
+    }
+
+    /* Main column */
+    .main{
+      padding:32px;
+      background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent 40%);
+      display:flex;
+      flex-direction:column;
+      gap:18px;
+    }
+
+    /* Sidebar HUD / high scores */
+    .sidebar{
+      background:linear-gradient(180deg, rgba(255,255,255,0.012), rgba(255,255,255,0.01));
+      padding:28px;
+      border-left:1px solid rgba(255,255,255,0.03);
+      display:flex;
+      flex-direction:column;
+      gap:18px;
+    }
+
+    header.app-header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+    }
+    .brand{
+      display:flex;align-items:center;gap:12px
+    }
+    .logo{
+      width:52px;height:52px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent-2));
+      display:grid;place-items:center;font-weight:700;color:#022; font-family:Rubik,Inter, sans-serif;
+      box-shadow:0 6px 18px rgba(125,211,252,0.08);
+    }
+    h1.title{font-size:20px;margin:0}
+    p.lead{margin:0;color:var(--muted);font-size:13px}
+
+    /* Pages (home, game, end) */
+    .page{display:none;flex:1;align-items:stretch}
+    .page.active{display:flex}
+
+    /* Home page */
+    .home-content{display:flex;flex-direction:column;gap:18px}
+    .card{background:var(--glass);border-radius:12px;padding:18px;box-shadow:inset 0 1px 0 rgba(255,255,255,0.02)}
+
+    .btn{background:linear-gradient(90deg,var(--accent),var(--accent-2));border:none;padding:12px 18px;border-radius:10px;color:#022;font-weight:700;cursor:pointer;font-size:15px}
+    .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--accent-2);}
+
+    /* Question card */
+    .q-top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .question-box{margin-top:6px;padding:20px;border-radius:12px;background:linear-gradient(180deg,rgba(255,255,255,0.015),transparent);border:1px solid rgba(255,255,255,0.02)}
+    .answers{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+    .answer{padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.03);cursor:pointer;font-weight:600}
+    .answer:focus{outline:2px solid rgba(125,211,252,0.18)}
+
+    .answer.correct{background:linear-gradient(90deg,rgba(110,231,183,0.12),transparent);border-color:rgba(110,231,183,0.28)}
+    .answer.incorrect{background:linear-gradient(90deg,rgba(255,123,123,0.06),transparent);border-color:rgba(255,123,123,0.22)}
+
+    .feedback{height:44px;display:grid;place-items:center;border-radius:10px}
+
+    /* HUD */
+    .hud{display:flex;flex-direction:column;gap:12px}
+    .hud-row{display:flex;align-items:center;justify-content:space-between}
+    .stat{background:var(--glass-2);padding:12px;border-radius:10px;text-align:center}
+    .stat b{display:block;font-size:20px}
+    .progress-wrap{height:14px;background:rgba(255,255,255,0.03);border-radius:10px;overflow:hidden}
+    .progress{height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--accent-2));}
+
+    /* High scores list */
+    .scores{display:flex;flex-direction:column;gap:8px;max-height:320px;overflow:auto;padding-right:6px}
+    .score-item{display:flex;justify-content:space-between;padding:8px;border-radius:8px;background:rgba(255,255,255,0.02)}
+
+    /* End page */
+    .end-ct{display:flex;flex-direction:column;gap:12px;align-items:center;justify-content:center;height:100%}
+    .small{font-size:13px;color:var(--muted)}
+
+    footer{display:flex;justify-content:space-between;align-items:center;gap:12px}
+
+    /* Responsive */
+    @media (max-width:900px){
+      .app{grid-template-columns:1fr;min-height:720px}
+      .sidebar{order:2}
+      .main{order:1}
+      .answers{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+  <div class="app" role="application">
+    <main class="main">
+      <header class="app-header">
+        <div class="brand">
+          <div class="logo">QZ</div>
+          <div>
+            <h1 class="title">Liza</h1>
+            <p class="lead">Fast, friendly quizzes — test your knowledge!</p>
+          </div>
+        </div>
+        <div>
+          <button class="btn" id="startBtn">Start Quiz</button>
+        </div>
+      </header>
+
+      <!-- HOME PAGE -->
+      <section id="homePage" class="page active">
+        <div class="home-content" style="width:100%">
+          <div class="card">
+            <h2 style="margin:0 0 8px 0">How to play</h2>
+            <p class="small" style="margin:0">You will be shown <strong>5</strong> questions. Each correct answer gives <strong>10</strong> points. Try to score as high as possible — your high scores are saved in your browser.</p>
+          </div>
+
+          <div class="card">
+            <h3 style="margin:0 0 8px 0">Quiz settings (demo)</h3>
+            <div style="display:flex;gap:12px;flex-wrap:wrap">
+              <label class="small" style="display:flex;gap:6px;align-items:center"><input id="shuffleQ" type="checkbox"> Shuffle questions</label>
+              <label class="small" style="display:flex;gap:6px;align-items:center"><input id="timerOn" type="checkbox"> Timer (10s per question)</label>
+            </div>
+          </div>
+
+          <div class="card" style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center">
+            <h2 style="margin:0 0 12px 0">Ready?</h2>
+            <button class="btn" id="beginBtn">Begin Quiz Now</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- GAME PAGE -->
+      <section id="gamePage" class="page">
+        <div style="display:flex;flex-direction:column;gap:12px;width:100%">
+          <div class="q-top">
+            <div>
+              <div id="qCounter" class="small">Question 1 / 5</div>
+              <h2 id="questionTitle" style="margin:6px 0 0 0">Question text goes here</h2>
+            </div>
+            <div class="small">Timer: <span id="timerDisplay">--</span>s</div>
+          </div>
+
+          <div class="question-box">
+            <div class="answers" id="answers"></div>
+          </div>
+
+          <div class="feedback card" id="feedback" aria-live="polite"></div>
+
+          <div style="display:flex;gap:12px;justify-content:flex-end">
+            <button class="btn ghost" id="nextBtn">Next</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- END PAGE -->
+      <section id="endPage" class="page">
+        <div class="end-ct">
+          <h2 id="endTitle">Great job!</h2>
+          <p class="small" id="endScore">Your score: 0</p>
+          <div style="display:flex;gap:8px">
+            <input id="nameInput" placeholder="Enter your name" style="padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.03);background:transparent;color:inherit">
+            <button class="btn" id="saveScoreBtn">Save Score</button>
+          </div>
+          <div style="width:100%;margin-top:12px">
+            <h4 style="margin:4px 0">High Scores</h4>
+            <div class="scores" id="highScoresList"></div>
+            <div style="display:flex;gap:8px;margin-top:8px">
+              <button class="btn ghost" id="playAgainBtn">Play Again</button>
+              <button class="btn ghost" id="clearScoresBtn">Clear Scores</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <footer>
+        <small class="small">Questions: <span id="totalQ">5</span></small>
+      </footer>
+    </main>
+
+    <!-- SIDEBAR/HUD -->
+    <aside class="sidebar">
+      <div class="hud card">
+        <div class="hud-row">
+          <div class="stat" style="flex:1">
+            <div class="small">Score</div>
+            <b id="scoreDisplay">0</b>
+          </div>
+          <div class="stat" style="flex:1">
+            <div class="small">Current</div>
+            <b id="currentQDisplay">1 / 5</b>
+          </div>
+        </div>
+        <div>
+          <div class="small">Progress</div>
+          <div class="progress-wrap" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+            <div class="progress" id="progBar"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="flex:1;display:flex;flex-direction:column">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <h3 style="margin:0;font-size:15px">Top Scores</h3>
+          <button class="btn ghost" id="refreshScores">Refresh</button>
+        </div>
+        <div class="scores" id="sideHighScores"></div>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;gap:8px">
+        <button class="btn ghost" id="goHomeBtn">Home</button>
+        <button class="btn ghost" id="viewScoresFull">View</button>
+      </div>
+    </aside>
+  </div>
+
+  <script>
+    // ----------- Hard-coded question bank -----------
+    const QUESTIONS = [
+      {
+        q: "What is the capital of France?",
+        choices: ["Paris","Lyon","Marseille","Nice"],
+        answer: 0
+      },
+      {
+        q: "Which language runs in a web browser?",
+        choices: ["Python","C++","JavaScript","Java"],
+        answer: 2
+      },
+      {
+        q: "What does CSS stand for?",
+        choices: ["Central Style Sheets","Cascading Style Sheets","Computer Style Sheets","Creative Style Sheets"],
+        answer: 1
+      },
+      {
+        q: "Which planet is known as the Red Planet?",
+        choices: ["Earth","Venus","Mars","Jupiter"],
+        answer: 2
+      },
+      {
+        q: "Which company developed the React library?",
+        choices: ["Google","Facebook (Meta)","Microsoft","Twitter"],
+        answer: 1
+      }
+    ];
+
+    // ----------- App state -----------
+    let state = {
+      questions: [...QUESTIONS],
+      currentIndex: 0,
+      score: 0,
+      perQuestion: 10,
+      timer: null,
+      timeLeft: 0,
+      timePerQ: 0,
+    };
+
+    // ----------- DOM -----------
+    const homePage = document.getElementById('homePage');
+    const gamePage = document.getElementById('gamePage');
+    const endPage = document.getElementById('endPage');
+    const startBtn = document.getElementById('startBtn');
+    const beginBtn = document.getElementById('beginBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const questionTitle = document.getElementById('questionTitle');
+    const answersEl = document.getElementById('answers');
+    const feedback = document.getElementById('feedback');
+    const scoreDisplay = document.getElementById('scoreDisplay');
+    const qCounter = document.getElementById('qCounter');
+    const currentQDisplay = document.getElementById('currentQDisplay');
+    const progBar = document.getElementById('progBar');
+    const timerDisplay = document.getElementById('timerDisplay');
+    const totalQ = document.getElementById('totalQ');
+    const endScore = document.getElementById('endScore');
+    const endTitle = document.getElementById('endTitle');
+    const saveScoreBtn = document.getElementById('saveScoreBtn');
+    const nameInput = document.getElementById('nameInput');
+    const highScoresList = document.getElementById('highScoresList');
+    const sideHighScores = document.getElementById('sideHighScores');
+    const refreshScores = document.getElementById('refreshScores');
+    const clearScoresBtn = document.getElementById('clearScoresBtn');
+    const playAgainBtn = document.getElementById('playAgainBtn');
+    const goHomeBtn = document.getElementById('goHomeBtn');
+    const viewScoresFull = document.getElementById('viewScoresFull');
+
+    // Init UI
+    totalQ.textContent = state.questions.length;
+
+    // Utility: show page
+    function showPage(id){
+      [homePage, gamePage, endPage].forEach(p => p.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+
+    // Shuffle utility
+    function shuffle(a){
+      for(let i=a.length-1;i>0;i--){
+        const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];
+      }
+    }
+
+    // Start quiz
+    function startQuiz(){
+      // reset state
+      state.questions = [...QUESTIONS];
+      if(document.getElementById('shuffleQ').checked){shuffle(state.questions)}
+      state.currentIndex = 0;
+      state.score = 0;
+      scoreDisplay.textContent = state.score;
+      updateHUD();
+      state.timePerQ = document.getElementById('timerOn').checked ? 10 : 0;
+      showPage('gamePage');
+      renderQuestion();
+    }
+
+    // Render question
+    function renderQuestion(){
+      clearTimer();
+      const qObj = state.questions[state.currentIndex];
+      questionTitle.textContent = qObj.q;
+      answersEl.innerHTML='';
+      qObj.choices.forEach((c, idx)=>{
+        const btn=document.createElement('button');
+        btn.className='answer';
+        btn.textContent = c;
+        btn.setAttribute('data-idx', idx);
+        btn.onclick = () => handleAnswer(btn, idx);
+        btn.onkeydown = (e)=>{ if(e.key==='Enter' || e.key===' ') { e.preventDefault(); btn.click(); }};
+        answersEl.appendChild(btn);
+      });
+      qCounter.textContent = `Question ${state.currentIndex+1} / ${state.questions.length}`;
+      currentQDisplay.textContent = `${state.currentIndex+1} / ${state.questions.length}`;
+      updateProgress();
+      feedback.textContent='';
+      nextBtn.disabled = true;
+
+      if(state.timePerQ>0){
+        state.timeLeft = state.timePerQ; timerDisplay.textContent = state.timeLeft;
+        state.timer = setInterval(()=>{
+          state.timeLeft--;
+          timerDisplay.textContent = state.timeLeft;
+          if(state.timeLeft<=0){
+            clearTimer();
+            showFeedback(false, `Time's up! Correct: ${qObj.choices[qObj.answer]}`);
+            markCorrectAnswer(qObj.answer);
+            nextBtn.disabled=false;
+          }
+        },1000);
+      } else {
+        timerDisplay.textContent='--';
+      }
+    }
+
+    function clearTimer(){ if(state.timer){clearInterval(state.timer);state.timer=null}}
+
+    function handleAnswer(btn, chosenIdx){
+      // disable further clicks
+      Array.from(answersEl.children).forEach(b=>b.disabled=true);
+      clearTimer();
+      const qObj = state.questions[state.currentIndex];
+      const correct = chosenIdx === qObj.answer;
+      if(correct){
+        state.score += state.perQuestion;
+        btn.classList.add('correct');
+        showFeedback(true,'Correct! +'+state.perQuestion+' pts');
+      } else {
+        btn.classList.add('incorrect');
+        showFeedback(false,'Incorrect — try the next one');
+        markCorrectAnswer(qObj.answer);
+      }
+      scoreDisplay.textContent = state.score;
+      nextBtn.disabled = false;
+      updateHUD();
+    }
+
+    function markCorrectAnswer(idx){
+      const btn = answersEl.querySelector(`[data-idx='${idx}']`);
+      if(btn) btn.classList.add('correct');
+    }
+
+    function showFeedback(ok, text){
+      feedback.textContent = text;
+      feedback.style.color = ok ? 'var(--accent)' : 'var(--danger)';
+    }
+
+    function updateProgress(){
+      const pct = Math.round((state.currentIndex / state.questions.length) * 100);
+      progBar.style.width = pct + '%';
+      progBar.parentElement.setAttribute('aria-valuenow', pct);
+    }
+
+    function updateHUD(){
+      scoreDisplay.textContent = state.score;
+      currentQDisplay.textContent = `${Math.min(state.currentIndex+1, state.questions.length)} / ${state.questions.length}`;
+      totalQ.textContent = state.questions.length;
+      // sidebar list refresh optional
+    }
+
+    // Next question or end
+    function next(){
+      if(state.currentIndex < state.questions.length - 1){
+        state.currentIndex++;
+        renderQuestion();
+      } else {
+        endQuiz();
+      }
+    }
+
+    // End quiz
+    function endQuiz(){
+      clearTimer();
+      showPage('endPage');
+      endScore.textContent = `Your score: ${state.score}`;
+      if(state.score >= (state.questions.length * state.perQuestion * 0.8)){
+        endTitle.textContent = 'Excellent!';
+      } else if(state.score >= (state.questions.length * state.perQuestion * 0.5)){
+        endTitle.textContent = 'Nice effort!';
+      } else {
+        endTitle.textContent = 'Good try — keep practicing!';
+      }
+      renderHighScores();
+      renderSideScores();
+    }
+
+    // High scores (localStorage)
+    const STORAGE_KEY = 'swiftquiz_highscores_v1';
+
+    function loadHighScores(){
+      try{
+        const raw = localStorage.getItem(STORAGE_KEY);
+        return raw ? JSON.parse(raw) : [];
+      }catch(e){return []}
+    }
+
+    function saveHighScore(name, score){
+      const list = loadHighScores();
+      list.push({name: name||'Anonymous', score: score, date: new Date().toISOString()});
+      list.sort((a,b)=>b.score-a.score);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(list.slice(0,20)));
+    }
+
+    function renderHighScores(){
+      const list = loadHighScores();
+      highScoresList.innerHTML='';
+      if(list.length===0){ highScoresList.innerHTML = '<div class="small">No high scores yet — be the first!</div>'; return }
+      list.forEach((s, i)=>{
+        const div = document.createElement('div'); div.className='score-item';
+        div.innerHTML = `<div style="flex:1">${i+1}. <strong>${escapeHtml(s.name)}</strong></div><div><b>${s.score}</b></div>`;
+        highScoresList.appendChild(div);
+      });
+    }
+
+    function renderSideScores(){
+      const list = loadHighScores();
+      sideHighScores.innerHTML='';
+      list.slice(0,5).forEach((s,i)=>{
+        const d=document.createElement('div');d.className='score-item';d.innerHTML=`<div>${i+1}. ${escapeHtml(s.name)}</div><div><b>${s.score}</b></div>`;sideHighScores.appendChild(d);
+      });
+      if(list.length===0){ sideHighScores.innerHTML='<div class="small">—</div>' }
+    }
+
+    function escapeHtml(text){
+      return String(text).replace(/[&<>"']/g, function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#039;"}[m]});
+    }
+
+    // Events
+    startBtn.onclick = ()=> showPage('homePage');
+    beginBtn.onclick = startQuiz;
+    document.getElementById('beginBtn').addEventListener('click', ()=> {});
+    nextBtn.onclick = next;
+    saveScoreBtn.onclick = ()=>{
+      const name = nameInput.value.trim() || 'You';
+      saveHighScore(name, state.score);
+      renderHighScores(); renderSideScores();
+      nameInput.value = '';
+    };
+    refreshScores.onclick = renderSideScores;
+    clearScoresBtn.onclick = ()=>{ localStorage.removeItem(STORAGE_KEY); renderHighScores(); renderSideScores(); };
+    playAgainBtn.onclick = ()=>{ showPage('homePage') };
+    goHomeBtn.onclick = ()=> showPage('homePage');
+    viewScoresFull.onclick = ()=> showPage('endPage');
+
+    // initial render
+    renderHighScores(); renderSideScores();
+
+    // keyboard shortcuts: N for next
+    document.addEventListener('keydown', (e)=>{
+      if(e.key.toLowerCase()==='n' && document.getElementById('gamePage').classList.contains('active')){
+        if(!nextBtn.disabled) next();
+      }
+    });
+
+    // Accessibility note: focus on first answer when rendering
+    const observer = new MutationObserver(()=>{
+      setTimeout(()=>{
+        const first = answersEl.querySelector('.answer'); if(first) first.focus();
+      },50)
+    });
+    observer.observe(answersEl, {childList:true});
+
+  </script>
+</body>
+</html>
